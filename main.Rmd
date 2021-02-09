@@ -1,0 +1,208 @@
+---
+title: "Econometrics - Homework 1"
+output:
+  html_document: default
+  html_notebook: default
+  pdf_document: default
+---
+
+```{r include = FALSE}
+library(stargazer)
+library(dplyr)
+library(GGally)
+library(ggplot2)
+library(skimr)
+library(DataExplorer)
+```
+
+# Name: Hakon Petermann Rueda
+
+```{r}
+#loading data
+companions_data <- read.csv("companions_data.csv")
+```
+
+
+Description of the variables in the data set:
+
+- `man` management quality (0-9)
+- `sta` staff quality (0-9)
+- `typ` dummy variable indicating type of establishment (0 - conventional, 1 - modern/unusual theme and ambience)
+- `income` local per capita income (in GBP 1000s)
+- `com` competitor density (per km2)
+
+1. Notice first what your dependent variable is, i.e. what variable should be on the left
+hand side of your regression equation. Look at the explanatory (right
+hand side) variables you have at your disposal, and conceptually (based on economic
+theory) think about what variables you think you should include in your model, and
+what effect you think these variables will have on revenues.
+
+```{r}
+head(companions_data, 4)
+```
+
+Conceptually and based on economic theory of supply and demand we could focus on income and competition density as explanatory variables. Higher income levels, and lower competition levels are expected to increase revenues (unless it happens to be the case that wealthy people drink less for some reason). I feel however that the remaining explanatory variables should be included too, but before including them their levels of correlation should all be tested against each other to avoid multicollinearity (straight away I would expect manager and staff quality to be relatively highly correlated, perhaps the same for both those variables and income levels).  
+
+
+2. Calculate summary statistics (mean, median, max, min, sd etc.) 
+
+```{r}
+summary(companions_data)
+```
+
+Also running skim() because I prefer the way it summarises the dataset.
+
+```{r}
+skim(companions_data)
+```
+
+3. Draw scatter plots, which depict the relationship between revenues and all the
+numerical variables in your data. What do you notice? The patterns in these scatter
+plots should tell you the direction of the correlation, give you an indication of the
+strength of the correlation. Is this in keeping with your priors? 
+
+```{r}
+#ggpairs(companions_data[,c("rev", "man", "sta", "typ", "income", "com")], progress = FALSE)
+#print(ggp, progress = FALSE)
+#?ggpairs
+
+plot(companions_data$rev, companions_data$man, main="Scatterplot",
+     xlab="Manager quality",
+     ylab="Revenue")
+
+plot(companions_data$rev, companions_data$sta, main="Scatterplot",
+     xlab="Staff quality",
+     ylab="Revenue")
+
+plot(companions_data$rev, companions_data$typ, main="Scatterplot",
+     xlab="Manager quality",
+     ylab="Revenue")
+
+plot(companions_data$rev, companions_data$income, main="Scatterplot",
+     xlab="Staff quality",
+     ylab="Revenue")
+
+plot(companions_data$rev, companions_data$com, main="Scatterplot",
+     xlab="Manager quality",
+     ylab="Revenue")
+```
+
+The scatter plots depicting the relationship between revenues and all the numerical variables in our data set have been generated above. The results are surprising. By visual inspection alone, income and competitive density do not have the strong levels of correlation I was expecting them to. Not surprisingly though it seem that staff and manager quality are both positively correlated with revenue (and as expected, they exhibit the strongest correlation between any two explanatory variables).
+
+
+4. Calculate a correlation matrix. If the correlation between any two explanatory
+variables is larger than |0.85|, then do not include both of these variables in your
+regression. Choose one or another.
+
+```{r}
+correlations <- cor(companions_data[,c("rev", "man", "sta", "typ", "income", "com")])
+print(correlations)
+```
+
+The correlation between any two explanatory variables does not exceed |0.85|. The maximum is the correlation between manager and staff quality with a +0.375 correlation.
+
+5. Choose a model, which is aligned with the conceptual modeling in step 1.
+
+The *pure economic* conceptual model I described in step 1 included only income and competitive density levels. I do not believe this will estimate the dependent variable very well but am going to use it as the starting model here so we can build on it on later steps.
+
+6. Estimate this chosen model.
+
+```{r}
+model1 <- lm(rev ~ income + com, data = companions_data)
+
+summary(model1)
+```
+
+7. Compare model with other model candidates. Settle on a final regression model
+specification.
+
+Exactly as expected above, the chosen model was a very poor estimation. Based on the correlation table I expect a model including manager quality, staff quality, and pub type will yield better results.
+
+```{r}
+model2 <- lm(rev ~ man + sta + typ, data = companions_data)
+model3 <- lm(rev ~ man + sta + typ + income + com, data = companions_data)
+
+stargazer(model1, model2, model3, type = 'text')
+```
+
+As expected model 2 yielded far better (even good going by the 0.8+ R2 value) results. For the sake of testing I still tested one more model with all explanatory variables (model 3), but expected worse explanatory power.
+
+To my surprise it does not actually make the model worse, in fact in makes the model fractionally better. At a 5% significance level all explanatory variables are even significant (although competitive density is not as significant as the rest of the variables in this model). Although the explanatory power is only fractionally better than the previous one without income and competitive density, the statistical significance of the two additional variables does mean that they give insight and understanding to our model, and so this is the model I will settle on.
+
+8. For your final model, interpret the regression coefficients (e.g. an x-percent increase in
+INCOME leads to an x-percent increase in revenue or a one unit increase in COM
+leads to x pound more income or …) 
+
+Keeping all things equal, a 1% increase in
+- management quality leads to a 1.56% increase in revenue
+- staff quality leads to a 0.3% increase in revenue
+- income leads to a 0.11% increase in revenue
+- competitive density leads to a 0.41% increase in revenue (this one does not make sense intuitively, but is consistent with what the "marketing team" has said)
+
+9. Use your model to answer the question of whether Companions should purchase Site
+A or Site B, by making an out of sample prediction based on these site’s
+characteristics, and your coefficient estimates. Not all site’s characteristics are
+available. Predict revenues under two different scenarios: a “bad” scenario and a good
+one. In doing this, you should conduct “sensitivity analysis” by plugging in different
+possible values for those explanatory variables (that are in your chosen model) whose
+values you don’t know for sure.
+
+Good scenario:
+Site A:
+```{r}
+#know for certain:          com = 0.1, typ = 0, sta = 8, income = 8000
+#assumed (good scenario):   man = 8
+new_data_A_good <- data.frame(man = 8, sta = 8, typ = 0, income = 8, com = 0.1)
+
+predicted_revenue_A_good <- predict(model3, newdata = new_data_A_good)
+cat("Revenue Site A, good scenario: ", predicted_revenue_A_good)
+#costs = 0.5
+profit_A_good <- predicted_revenue_A_good - 0.5
+cat("\nProfit Site A, good scenario: ", profit_A_good)
+```
+
+Site B:
+```{r}
+#know for certain:          com = 0.9, sta = 8, man = 4, income = 14,800, typ = 1
+#assumed (good scenario):   N/A
+new_data_B_good <- data.frame(man = 4, sta = 8, typ = 1, income = 14.8, com = 0.9)
+
+predicted_revenue_B_good <- predict(model3, newdata = new_data_B_good)
+cat("Revenue Site B, good scenario: ", predicted_revenue_B_good)
+#costs = 2
+profit_B_good <- predicted_revenue_B_good - 2
+cat("\nProfit Site B, good scenario: ", profit_B_good)
+```
+
+Bad scenario:
+Site A:
+```{r}
+#know for certain:          com = 0.1, typ = 0, sta = 8, income = 8000
+#assumed (bad scenario):   man = 4
+new_data_A_bad <- data.frame(man = 4, sta = 8, typ = 0, income = 8, com = 0.1)
+
+predicted_revenue_A_bad <- predict(model3, newdata = new_data_A_bad)
+cat("Revenue Site A, bad scenario: ", predicted_revenue_A_bad)
+#costs = 0.5
+profit_A_bad <- predicted_revenue_A_bad - 0.5
+cat("\nProfit Site A, bad scenario: ", profit_A_bad)
+```
+
+Site B:
+```{r}
+#know for certain:          com = 0.9, sta = 8, man = 4, income = 14,800, typ = 1
+#assumed (bad scenario):    N/A, but in a bad scenario perhaps we find worse staff (decrease sta by 2, i.e., sta = 6)
+new_data_B_bad <- data.frame(man = 4, sta = 6, typ = 1, income = 14.8, com = 0.9)
+
+predicted_revenue_B_bad <- predict(model3, newdata = new_data_B_bad)
+cat("Revenue Site B, bad scenario: ", predicted_revenue_B_bad)
+#costs = 2
+profit_B_bad <- predicted_revenue_B_bad - 2
+cat("\nProfit Site B, bad scenario: ", profit_B_bad)
+```
+
+10. Briefly (max 2 sentences) discuss what happens to your prediction if an unexpected
+event occurs (e.g., the Covid crisis).
+
+The prediction stops being reliable because the data used to generate it is biased towards a non-pandemic environment. We could use the same model if factors outside of our model remained unchanged (consumer propensity to spend, consumer willingness to visit pubs, maximum capacity of pubs) and we knew the revised values for our known explanatory variables (those in our model already), but this is not the case.
+
