@@ -19,17 +19,35 @@ library(DataExplorer)
 
 ```{r}
 #loading data
-companions_data <- read.csv("companions_data.csv")
+companions_data <- read.csv("prospects.csv")
+View(companions_data)
 ```
 
 
 Description of the variables in the data set:
 
-- `man` management quality (0-9)
-- `sta` staff quality (0-9)
-- `typ` dummy variable indicating type of establishment (0 - conventional, 1 - modern/unusual theme and ambience)
-- `income` local per capita income (in GBP 1000s)
-- `com` competitor density (per km2)
+- `seniority` job seniority (years)
+- `home` type of home ownership
+- `seniority` job seniority (years)
+- `seniority` job seniority (years)
+- `seniority` job seniority (years)
+- `seniority` job seniority (years)
+- `seniority` job seniority (years)
+- `seniority` job seniority (years)
+- `seniority` job seniority (years)
+- `seniority` job seniority (years)
+
+age client's age
+marital marital status
+job type of job
+expenses client's expenses
+income client's income
+assets client's assets
+debt client's existing debts
+amount loan amount (for prospects, this is the
+personal loan amount they have applied
+for)
+savings client's savings 
 
 1. Notice first what your dependent variable is, i.e. what variable should be on the left
 hand side of your regression equation. Look at the explanatory (right
