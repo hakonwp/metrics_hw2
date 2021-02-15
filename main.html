@@ -567,48 +567,53 @@ for (i in 1:10){
 <h1>3. Using the predicted default probabilities for each applicant you can now turn to making decisions on the applications. Each of these applications is for a 1-year loan, but for different amounts (see column “amount” in the prospects data). Assume that the annual interest rate that you can charge from your clients is 10%. Further assume that your cost of borrowing is zero and you have no other variable costs.</h1>
 <div id="whom-would-you-lend-to-given-the-predicted-default-probabilities-and-the-given-interest-rate-show-your-calculations-and-try-to-do-them-in-r." class="section level2">
 <h2>Whom would you lend to given the predicted default probabilities and the given interest rate? Show your calculations (and try to do them in R).</h2>
-<p>Well the loan is for 1 year, with a 10% interest rate and so the profit will be 10% of the loan amount. Taking the default rates into account, we want to multiply that profit by (1 - default rate). To run through all prospects and looking at their expected profits we get (using the linear model, which in most of the 10 prospects case’s is the most conservative):</p>
+<p>Well the loan is for 1 year, with a 10% interest rate and so the revenue without default will be 10% of the loan amount. Taking the default rates into account, we want to calculate an expected loss as (expected loss = default chance * loan amount). Running through all prospects and looking at their expected profits we get (using the linear model, which in most of the 10 prospects case’s is the most conservative):</p>
 <pre class="r"><code>for (i in 1:10){
-  expected_profit = (1-predict(model_lm2, pros[[i]])) * 0.1 * as.numeric(prospect_data[i,][11])
+  expected_revenue = 0.1 * as.numeric(prospect_data[i,][11])
+  expected_loss = predict(model_lm2, pros[[i]]) * as.numeric(prospect_data[i,][11])
+  expected_profit = expected_revenue - expected_loss
+  # expected_profit2 = (0.1 - predict(model_lm2, pros[[i]])) * as.numeric(prospect_data[i,][11])
   cat(&quot;Prospect number&quot;, i, &quot;(&quot;, as.character(prospect_data[i,][1]), &quot;)&quot;, &quot;expected profit: $&quot;, expected_profit, &quot;\n&quot;)
+  # cat(&quot;Prospect number&quot;, i, &quot;(&quot;, as.character(prospect_data[i,][1]), &quot;)&quot;, &quot;expected profit: $&quot;, expected_profit2, &quot;\n&quot;)
 }</code></pre>
-<pre><code>## Prospect number 1 ( Maier ) expected profit: $ 32.42514 
-## Prospect number 2 ( Ginter ) expected profit: $ 62.97109 
-## Prospect number 3 ( Mauser ) expected profit: $ 91.44118 
-## Prospect number 4 ( Beckmann ) expected profit: $ 50.53409 
-## Prospect number 5 ( Heckmann ) expected profit: $ 61.07434 
-## Prospect number 6 ( Buntschuh ) expected profit: $ 44.99042 
-## Prospect number 7 ( Kremer ) expected profit: $ 66.8028 
-## Prospect number 8 ( Schmidt ) expected profit: $ 130.5281 
-## Prospect number 9 ( Oener ) expected profit: $ 45.55714 
-## Prospect number 10 ( Fassbender ) expected profit: $ 74.01546</code></pre>
+<pre><code>## Prospect number 1 ( Maier ) expected profit: $ -8.748567 
+## Prospect number 2 ( Ginter ) expected profit: $ -45.2891 
+## Prospect number 3 ( Mauser ) expected profit: $ -165.5882 
+## Prospect number 4 ( Beckmann ) expected profit: $ -394.6591 
+## Prospect number 5 ( Heckmann ) expected profit: $ -199.2566 
+## Prospect number 6 ( Buntschuh ) expected profit: $ -450.0958 
+## Prospect number 7 ( Kremer ) expected profit: $ -501.972 
+## Prospect number 8 ( Schmidt ) expected profit: $ -89.71892 
+## Prospect number 9 ( Oener ) expected profit: $ 5.571412 
+## Prospect number 10 ( Fassbender ) expected profit: $ -47.34536</code></pre>
 </div>
 <div id="what-is-your-expected-profit-if-you-follow-this-recommendation" class="section level2">
 <h2>What is your expected profit if you follow this recommendation?</h2>
-<p>If we had to chose one single prospect to lend to, we would lend to the prospect number 8 (Schmidt).</p>
-<p>It must be noted though that Schmidt’s loan amount is also the largest though, so if we only had a fixed amount to loan, we would choose the prospect with the lowest default rate, which would be prospect number 9 (Oener).</p>
+<p>The only prospect we expect to be profitable is prospect number 9 (Oener).</p>
 </div>
 <div id="use-the-confidence-interval-in-the-linear-probability-model-to-calculate-a-negative-case-scenario-what-is-your-expected-profit-if-the-default-probabilities-are-at-the-upper-value-of-the-prediction-interval." class="section level2">
 <h2>Use the confidence interval in the linear probability model to calculate a negative case scenario: What is your expected profit if the default probabilities are at the upper value of the prediction interval.</h2>
-<p>To do this we use the predict() function for a lm and access it’s third element which is the upper-bound prediction.</p>
+<p>To do this we use the predict() function for a lm and access it’s third element which is the upper-bound prediction. After running through all prospects, none of them are expected to be profitable in the worst-case scenario.</p>
 <pre class="r"><code>for (i in 1:10){
-  expected_profit = (1-predict(model_lm2, pros[[i]], level=0.95, interval=&quot;confidence&quot;)[3]) * 0.1 * as.numeric(prospect_data[i,][11])
-  cat(&quot;Prospect number&quot;, i, &quot;(&quot;, as.character(prospect_data[i,][1]), &quot;)&quot;, &quot;expected profit (worst-case scenario): $&quot;, expected_profit, &quot;\n&quot;)
+  expected_revenue2 = 0.1 * as.numeric(prospect_data[i,][11])
+  expected_loss2 = predict(model_lm2, pros[[i]], level = 0.95, interval = &quot;confidence&quot;)[3] * as.numeric(prospect_data[i,][11])
+  expected_profit2 = expected_revenue2 - expected_loss2
+  cat(&quot;Prospect number&quot;, i, &quot;(&quot;, as.character(prospect_data[i,][1]), &quot;)&quot;, &quot;expected profit (worst-case scenario): $&quot;, expected_profit2, &quot;\n&quot;)
   
   # print(predict(model_lm2, pros[[i]], level=0.95, interval=&quot;confidence&quot;))
   # print(predict(model_lm2, pros[[i]], level=0.95, interval=&quot;confidence&quot;)[3])
   # predict(model_lm2, pros[[i]])
 }</code></pre>
-<pre><code>## Prospect number 1 ( Maier ) expected profit (worst-case scenario): $ 31.15318 
-## Prospect number 2 ( Ginter ) expected profit (worst-case scenario): $ 60.70811 
-## Prospect number 3 ( Mauser ) expected profit (worst-case scenario): $ 88.43613 
-## Prospect number 4 ( Beckmann ) expected profit (worst-case scenario): $ 46.27072 
-## Prospect number 5 ( Heckmann ) expected profit (worst-case scenario): $ 56.73033 
-## Prospect number 6 ( Buntschuh ) expected profit (worst-case scenario): $ 41.2167 
-## Prospect number 7 ( Kremer ) expected profit (worst-case scenario): $ 61.72508 
-## Prospect number 8 ( Schmidt ) expected profit (worst-case scenario): $ 126.3627 
-## Prospect number 9 ( Oener ) expected profit (worst-case scenario): $ 43.79988 
-## Prospect number 10 ( Fassbender ) expected profit (worst-case scenario): $ 70.78271</code></pre>
+<pre><code>## Prospect number 1 ( Maier ) expected profit (worst-case scenario): $ -21.46819 
+## Prospect number 2 ( Ginter ) expected profit (worst-case scenario): $ -67.91893 
+## Prospect number 3 ( Mauser ) expected profit (worst-case scenario): $ -195.6387 
+## Prospect number 4 ( Beckmann ) expected profit (worst-case scenario): $ -437.2928 
+## Prospect number 5 ( Heckmann ) expected profit (worst-case scenario): $ -242.6967 
+## Prospect number 6 ( Buntschuh ) expected profit (worst-case scenario): $ -487.833 
+## Prospect number 7 ( Kremer ) expected profit (worst-case scenario): $ -552.7492 
+## Prospect number 8 ( Schmidt ) expected profit (worst-case scenario): $ -131.3731 
+## Prospect number 9 ( Oener ) expected profit (worst-case scenario): $ -12.0012 
+## Prospect number 10 ( Fassbender ) expected profit (worst-case scenario): $ -79.67294</code></pre>
 <pre class="r"><code># linear_defaults &lt;- predict(model_lm2, prospect_data, level=0.95, interval=&quot;confidence&quot;)
 # as.numeric(linear_defaults[1,][1])</code></pre>
 </div>

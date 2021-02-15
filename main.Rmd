@@ -178,13 +178,17 @@ for (i in 1:10){
 
 ## Whom would you lend to given the predicted default probabilities and the given interest rate? Show your calculations (and try to do them in R).
 
-Well the loan is for 1 year, with a 10% interest rate and so the profit will be 10% of the loan amount. Taking the default rates into account, we want to multiply that profit by (1 - default rate). To run through all prospects and looking at their expected profits we get (using the linear model, which in most of the 10 prospects case's is the most conservative):
+Well the loan is for 1 year, with a 10% interest rate and so the revenue without default will be 10% of the loan amount. Taking the default rates into account, we want to calculate an expected loss as (expected loss = default chance * loan amount). Running through all prospects and looking at their expected profits we get (using the linear model, which in most of the 10 prospects case's is the most conservative):
 
 ```{r}
 
 for (i in 1:10){
-  expected_profit = (1-predict(model_lm2, pros[[i]])) * 0.1 * as.numeric(prospect_data[i,][11])
+  expected_revenue = 0.1 * as.numeric(prospect_data[i,][11])
+  expected_loss = predict(model_lm2, pros[[i]]) * as.numeric(prospect_data[i,][11])
+  expected_profit = expected_revenue - expected_loss
+  # expected_profit2 = (0.1 - predict(model_lm2, pros[[i]])) * as.numeric(prospect_data[i,][11])
   cat("Prospect number", i, "(", as.character(prospect_data[i,][1]), ")", "expected profit: $", expected_profit, "\n")
+  # cat("Prospect number", i, "(", as.character(prospect_data[i,][1]), ")", "expected profit: $", expected_profit2, "\n")
 }
 
 ```
@@ -192,18 +196,18 @@ for (i in 1:10){
 
 ## What is your expected profit if you follow this recommendation?
 
-If we had to chose one single prospect to lend to, we would lend to the prospect number 8 (Schmidt).
-
-It must be noted though that Schmidt's loan amount is also the largest though, so if we only had a fixed amount to loan, we would choose the prospect with the lowest default rate, which would be prospect number 9 (Oener).
+The only prospect we expect to be profitable is prospect number 9 (Oener).
 
 ##  Use the confidence interval in the linear probability model to calculate a negative case scenario: What is your expected profit if the default probabilities are at the upper value of the prediction interval.
 
-To do this we use the predict() function for a lm and access it's third element which is the upper-bound prediction.
+To do this we use the predict() function for a lm and access it's third element which is the upper-bound prediction. After running through all prospects, none of them are expected to be profitable in the worst-case scenario.
 
 ```{r}
 for (i in 1:10){
-  expected_profit = (1-predict(model_lm2, pros[[i]], level=0.95, interval="confidence")[3]) * 0.1 * as.numeric(prospect_data[i,][11])
-  cat("Prospect number", i, "(", as.character(prospect_data[i,][1]), ")", "expected profit (worst-case scenario): $", expected_profit, "\n")
+  expected_revenue2 = 0.1 * as.numeric(prospect_data[i,][11])
+  expected_loss2 = predict(model_lm2, pros[[i]], level = 0.95, interval = "confidence")[3] * as.numeric(prospect_data[i,][11])
+  expected_profit2 = expected_revenue2 - expected_loss2
+  cat("Prospect number", i, "(", as.character(prospect_data[i,][1]), ")", "expected profit (worst-case scenario): $", expected_profit2, "\n")
   
   # print(predict(model_lm2, pros[[i]], level=0.95, interval="confidence"))
   # print(predict(model_lm2, pros[[i]], level=0.95, interval="confidence")[3])
