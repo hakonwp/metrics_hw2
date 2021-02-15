@@ -1,5 +1,5 @@
 ---
-title: "Econometrics - Homework 1"
+title: "Econometrics - Homework 2"
 output:
   html_document: default
   html_notebook: default
@@ -19,208 +19,198 @@ library(DataExplorer)
 
 ```{r}
 #loading data
-companions_data <- read.csv("prospects.csv")
-View(companions_data)
+prospect_data <- read.csv("prospects.csv")
+credit_data <- read.csv("credit.csv")
+#View(prospect_data)
+#View(credit_data)
+
+#class(credit_data$home)
+#is.vector(credit_data$home)
+
+
+credit_data$home_vector <- as.factor(credit_data$home)
+# #class(credit_data$home_vector)
+ levels(credit_data$home_vector)
+# nlevels(credit_data$home_vector)
+# 
+credit_data$marital_vector <- as.factor(credit_data$marital)
+# #class(credit_data$marital_vector)
+# levels(credit_data$marital_vector)
+# nlevels(credit_data$marital_vector)
+# 
+credit_data$job_vector <- as.factor(credit_data$job)
+# #class(credit_data$job_vector)
+# levels(credit_data$job_vector)
+# nlevels(credit_data$job_vector)
+
+
+prospect_data$home_vector <- as.factor(prospect_data$home)
+prospect_data$marital_vector <- as.factor(prospect_data$marital)
+prospect_data$job_vector <- as.factor(prospect_data$job)
 ```
 
 
-Description of the variables in the data set:
-
+Description of the variables in both data sets:
 - `seniority` job seniority (years)
 - `home` type of home ownership
-- `seniority` job seniority (years)
-- `seniority` job seniority (years)
-- `seniority` job seniority (years)
-- `seniority` job seniority (years)
-- `seniority` job seniority (years)
-- `seniority` job seniority (years)
-- `seniority` job seniority (years)
-- `seniority` job seniority (years)
+- `age` client's age
+- `marital` marital status
+- `job` type of job
+- `expenses` client's expenses
+- `income` client's income
+- `assets` client's assets
+- `debt` client's existing debts
+- `amount` loan amount (for prospects, this is the personal loan amount they have applied for)
+- `savings` client's savings
 
-age client's age
-marital marital status
-job type of job
-expenses client's expenses
-income client's income
-assets client's assets
-debt client's existing debts
-amount loan amount (for prospects, this is the
-personal loan amount they have applied
-for)
-savings client's savings 
-
-1. Notice first what your dependent variable is, i.e. what variable should be on the left
-hand side of your regression equation. Look at the explanatory (right
-hand side) variables you have at your disposal, and conceptually (based on economic
-theory) think about what variables you think you should include in your model, and
-what effect you think these variables will have on revenues.
-
+Correlations
 ```{r}
-head(companions_data, 4)
-```
-
-Conceptually and based on economic theory of supply and demand we could focus on income and competition density as explanatory variables. Higher income levels, and lower competition levels are expected to increase revenues (unless it happens to be the case that wealthy people drink less for some reason). I feel however that the remaining explanatory variables should be included too, but before including them their levels of correlation should all be tested against each other to avoid multicollinearity (straight away I would expect manager and staff quality to be relatively highly correlated, perhaps the same for both those variables and income levels).  
-
-
-2. Calculate summary statistics (mean, median, max, min, sd etc.) 
-
-```{r}
-summary(companions_data)
-```
-
-Also running skim() because I prefer the way it summarises the dataset.
-
-```{r}
-skim(companions_data)
-```
-
-3. Draw scatter plots, which depict the relationship between revenues and all the
-numerical variables in your data. What do you notice? The patterns in these scatter
-plots should tell you the direction of the correlation, give you an indication of the
-strength of the correlation. Is this in keeping with your priors? 
-
-```{r}
-#ggpairs(companions_data[,c("rev", "man", "sta", "typ", "income", "com")], progress = FALSE)
+#ggp <- ggpairs(credit_data[,c("default", "seniority", "home", "age", "marital", "job", "expenses", "income", "assets", "debt", "amount", "savings")])
 #print(ggp, progress = FALSE)
-#?ggpairs
 
-plot(companions_data$rev, companions_data$man, main="Scatterplot",
-     xlab="Manager quality",
-     ylab="Revenue")
-
-plot(companions_data$rev, companions_data$sta, main="Scatterplot",
-     xlab="Staff quality",
-     ylab="Revenue")
-
-plot(companions_data$rev, companions_data$typ, main="Scatterplot",
-     xlab="Manager quality",
-     ylab="Revenue")
-
-plot(companions_data$rev, companions_data$income, main="Scatterplot",
-     xlab="Staff quality",
-     ylab="Revenue")
-
-plot(companions_data$rev, companions_data$com, main="Scatterplot",
-     xlab="Manager quality",
-     ylab="Revenue")
-```
-
-The scatter plots depicting the relationship between revenues and all the numerical variables in our data set have been generated above. The results are surprising. By visual inspection alone, income and competitive density do not have the strong levels of correlation I was expecting them to. Not surprisingly though it seem that staff and manager quality are both positively correlated with revenue (and as expected, they exhibit the strongest correlation between any two explanatory variables).
-
-
-4. Calculate a correlation matrix. If the correlation between any two explanatory
-variables is larger than |0.85|, then do not include both of these variables in your
-regression. Choose one or another.
-
-```{r}
-correlations <- cor(companions_data[,c("rev", "man", "sta", "typ", "income", "com")])
+correlations <- cor(credit_data[,c("default", "seniority", "age", "expenses", "income", "assets", "debt", "amount", "savings")])
 print(correlations)
 ```
 
-The correlation between any two explanatory variables does not exceed |0.85|. The maximum is the correlation between manager and staff quality with a +0.375 correlation.
+# 1. Build and estimate a model to predict the probability that these applicants will default on their loan (if you choose to disburse one).
 
-5. Choose a model, which is aligned with the conceptual modeling in step 1.
+## i. Write down a sensible model; explain your economic intuition for including the variables on the right-hand side of this model.
 
-The *pure economic* conceptual model I described in step 1 included only income and competitive density levels. I do not believe this will estimate the dependent variable very well but am going to use it as the starting model here so we can build on it on later steps.
+I would include most variables in the dataset. Two explanatory variables jump out as potentially being highly correlated, and this is confirmed when generating a correlation table: job *seniority* & *age*, as well as *savings level* & *income*. I will take out *age*, and *income* then because both *seniority* and *savings* have higher correlations with defaulting.
 
-6. Estimate this chosen model.
+I also think that home ownership type might be correlated very highly with savings rate, and so will be removing it (i.e., those living with their parents will intuitively have less savings then home owners).
 
-```{r}
-model1 <- lm(rev ~ income + com, data = companions_data)
+As for the rest of the numeric variables, my economic intuition says that it doesn't hurt to include them all. And for the factor variables, the same applies because there could be some hidden interactions behind the data that we do not expect. For example, marital status, or job contract type might be good predictors for default probability, but my intuition would not expect will be too highly correlated with other explanatory variables.
 
-summary(model1)
-```
+Estimated model:
+default ~ seniority + marital + job + expenses + assets + debt + amount + savings
 
-7. Compare model with other model candidates. Settle on a final regression model
-specification.
+## ii. Estimate this model using:
 
-Exactly as expected above, the chosen model was a very poor estimation. Based on the correlation table I expect a model including manager quality, staff quality, and pub type will yield better results.
+### a. Linear Probability Model
 
 ```{r}
-model2 <- lm(rev ~ man + sta + typ, data = companions_data)
-model3 <- lm(rev ~ man + sta + typ + income + com, data = companions_data)
+model_lm1 <- lm(default ~ seniority + marital + job_vector + expenses + assets + debt + amount + savings, data = credit_data) #as described above
+model_lm2 <- lm(default ~ seniority + home + job + expenses + assets + debt + amount + savings, data = credit_data) #removed marital vector due to insignificance, added home vector instead
+model_lm3 <- lm(default ~ seniority + job + expenses + assets + debt + amount + savings, data = credit_data) #removed both martial and home vector
+model_lm4 <- lm(default ~ seniority + job + expenses + assets + amount + savings, data = credit_data) #removed debt due to statistical insignificance
 
-stargazer(model1, model2, model3, type = 'text')
+stargazer(model_lm1, model_lm2, model_lm3, model_lm4, type = 'text')
 ```
+Before settling on a final model, I would like to consider adding the home owner variable, as that model has the highest adjusted-R2, but I am worried that is simply due to correlation with savings rate (i.e., multicollinearity is present.). Let me use a boxplot to see this relationship visually:
 
-As expected model 2 yielded far better (even good going by the 0.8+ R2 value) results. For the sake of testing I still tested one more model with all explanatory variables (model 3), but expected worse explanatory power.
-
-To my surprise it does not actually make the model worse, in fact in makes the model fractionally better. At a 5% significance level all explanatory variables are even significant (although competitive density is not as significant as the rest of the variables in this model). Although the explanatory power is only fractionally better than the previous one without income and competitive density, the statistical significance of the two additional variables does mean that they give insight and understanding to our model, and so this is the model I will settle on.
-
-8. For your final model, interpret the regression coefficients (e.g. an x-percent increase in
-INCOME leads to an x-percent increase in revenue or a one unit increase in COM
-leads to x pound more income or …) 
-
-Keeping all things equal, a 1% increase in
-- management quality leads to a 1.56% increase in revenue
-- staff quality leads to a 0.3% increase in revenue
-- income leads to a 0.11% increase in revenue
-- competitive density leads to a 0.41% increase in revenue (this one does not make sense intuitively, but is consistent with what the "marketing team" has said)
-
-9. Use your model to answer the question of whether Companions should purchase Site
-A or Site B, by making an out of sample prediction based on these site’s
-characteristics, and your coefficient estimates. Not all site’s characteristics are
-available. Predict revenues under two different scenarios: a “bad” scenario and a good
-one. In doing this, you should conduct “sensitivity analysis” by plugging in different
-possible values for those explanatory variables (that are in your chosen model) whose
-values you don’t know for sure.
-
-Good scenario:
-Site A:
 ```{r}
-#know for certain:          com = 0.1, typ = 0, sta = 8, income = 8000
-#assumed (good scenario):   man = 8
-new_data_A_good <- data.frame(man = 8, sta = 8, typ = 0, income = 8, com = 0.1)
-
-predicted_revenue_A_good <- predict(model3, newdata = new_data_A_good)
-cat("Revenue Site A, good scenario: ", predicted_revenue_A_good)
-#costs = 0.5
-profit_A_good <- predicted_revenue_A_good - 0.5
-cat("\nProfit Site A, good scenario: ", profit_A_good)
+#aov1 = aov(savings ~ home_vector, data = credit_data)
+#summary(aov1)
+#?boxplot
+boxplot(savings ~ home_vector, data = credit_data)
 ```
 
-Site B:
+It seems that there is not a strong relationship as I expected. I was not totally wrong as the biggest and most outliers for those with the highest savings are the home owners, but those are only outliers, and they are present for the other catagories too.
+
+Therefore my final model will be:
+
+default ~ seniority + home + job + expenses + assets + debt + amount + savings
+
 ```{r}
-#know for certain:          com = 0.9, sta = 8, man = 4, income = 14,800, typ = 1
-#assumed (good scenario):   N/A
-new_data_B_good <- data.frame(man = 4, sta = 8, typ = 1, income = 14.8, com = 0.9)
-
-predicted_revenue_B_good <- predict(model3, newdata = new_data_B_good)
-cat("Revenue Site B, good scenario: ", predicted_revenue_B_good)
-#costs = 2
-profit_B_good <- predicted_revenue_B_good - 2
-cat("\nProfit Site B, good scenario: ", profit_B_good)
+#summary of chosen model
+summary(model_lm2)
 ```
 
-Bad scenario:
-Site A:
+
+My final model was not the same as my intuitively constructed model, but it had a higher adjusted-R2 (0.185 vs 0.171).
+
+### b. Probit
+
 ```{r}
-#know for certain:          com = 0.1, typ = 0, sta = 8, income = 8000
-#assumed (bad scenario):   man = 4
-new_data_A_bad <- data.frame(man = 4, sta = 8, typ = 0, income = 8, com = 0.1)
+# ?glm
+model_prob1 <- glm(default ~ seniority + home + job + expenses + assets + debt + amount + savings, family = binomial(link = "probit"), data = credit_data)
 
-predicted_revenue_A_bad <- predict(model3, newdata = new_data_A_bad)
-cat("Revenue Site A, bad scenario: ", predicted_revenue_A_bad)
-#costs = 0.5
-profit_A_bad <- predicted_revenue_A_bad - 0.5
-cat("\nProfit Site A, bad scenario: ", profit_A_bad)
+summary(model_prob1)
 ```
 
-Site B:
+
+### c. Logit
+
 ```{r}
-#know for certain:          com = 0.9, sta = 8, man = 4, income = 14,800, typ = 1
-#assumed (bad scenario):    N/A, but in a bad scenario perhaps we find worse staff (decrease sta by 2, i.e., sta = 6)
-new_data_B_bad <- data.frame(man = 4, sta = 6, typ = 1, income = 14.8, com = 0.9)
+# ?glm
+model_log1 <- glm(default ~ seniority + home + job + expenses + assets + debt + amount + savings, family = binomial(link = "logit"), data = credit_data)
 
-predicted_revenue_B_bad <- predict(model3, newdata = new_data_B_bad)
-cat("Revenue Site B, bad scenario: ", predicted_revenue_B_bad)
-#costs = 2
-profit_B_bad <- predicted_revenue_B_bad - 2
-cat("\nProfit Site B, bad scenario: ", profit_B_bad)
+summary(model_log1)
 ```
 
-10. Briefly (max 2 sentences) discuss what happens to your prediction if an unexpected
-event occurs (e.g., the Covid crisis).
+### Does the model make sense? (sign and significance of variables)
 
-The prediction stops being reliable because the data used to generate it is biased towards a non-pandemic environment. We could use the same model if factors outside of our model remained unchanged (consumer propensity to spend, consumer willingness to visit pubs, maximum capacity of pubs) and we knew the revised values for our known explanatory variables (those in our model already), but this is not the case.
+Yes, the model makes sense. Increasing values for expenses, debt, loan amount, and the factors for all wokr types (besides fixed contracts) are estimated to lead to an increase in default rate. Things like job seniority, asset value, and savings amount on the other hand are estimated to have the opposite effect. As for the significance of the variables, what doesn't make sense really is that adding the home ownership type vector increases the significance of at least the debt explanatory variable, and increases the explanatory power of the model, but for the most part it is statistically insignificant.
+
+# 2. Using the estimates from part 1.ii (for the three models separately, and for each applicant separately), predict each of these applicants’ probability of default.
+
+```{r}
+# pros1 <- data.frame(seniority = prospect_data[1,][2], home = prospect_data[1,][3], age = prospect_data[1,][4], marital = prospect_data[1,][5], job = prospect_data[1,][6], expenses = prospect_data[1,][7], income = prospect_data[1,][8], assets = prospect_data[1,][9], debt = prospect_data[1,][10], amount = prospect_data[1,][11], savings = prospect_data[1,][12])
+
+pros <- list()
+
+for (i in 1:10){
+  pros[[i]] <- data.frame(seniority = prospect_data[i,][2], home = prospect_data[i,][3], age = prospect_data[i,][4], marital = prospect_data[i,][5], job = prospect_data[i,][6], expenses = prospect_data[i,][7], income = prospect_data[i,][8], assets = prospect_data[i,][9], debt = prospect_data[i,][10], amount = prospect_data[i,][11], savings = prospect_data[i,][12])
+
+
+
+  cat("Prospect number", i, "(", as.character(prospect_data[i,][1]), "):")
+  cat("\nLinear model probability of default:", 100*predict(model_lm2, pros[[i]]), "%")
+  cat("\nProbit model probability of default:", 100*predict(model_prob1, pros[[i]], type = "response"), "%")
+  cat("\nLogit model probability of default:", 100*predict(model_log1, pros[[i]], type = "response"), "%")
+  cat("\n\n")
+
+}
+
+
+# predict(model_lm2, prospect_data, level=0.95, interval="confidence")
+```
+
+
+```{r}
+# predict(model_lm2, prospect_data)
+# predict(model_prob1, prospect_data, type = "response")
+# predict(model_log1, prospect_data, type = "response")
+```
+
+# 3. Using the predicted default probabilities for each applicant you can now turn to making decisions on the applications. Each of these applications is for a 1-year loan, but for different amounts (see column “amount” in the prospects data). Assume that the annual interest rate that you can charge from your clients is 10%. Further assume that your cost of borrowing is zero and you have no other variable costs.
+
+## Whom would you lend to given the predicted default probabilities and the given interest rate? Show your calculations (and try to do them in R).
+
+Well the loan is for 1 year, with a 10% interest rate and so the profit will be 10% of the loan amount. Taking the default rates into account, we want to multiply that profit by (1 - default rate). To run through all prospects and looking at their expected profits we get (using the linear model, which in most of the 10 prospects case's is the most conservative):
+
+```{r}
+
+for (i in 1:10){
+  expected_profit = (1-predict(model_lm2, pros[[i]])) * 0.1 * as.numeric(prospect_data[i,][11])
+  cat("Prospect number", i, "(", as.character(prospect_data[i,][1]), ")", "expected profit: $", expected_profit, "\n")
+}
+
+```
+
+
+## What is your expected profit if you follow this recommendation?
+
+If we had to chose one single prospect to lend to, we would lend to the prospect number 8 (Schmidt).
+
+It must be noted though that Schmidt's loan amount is also the largest though, so if we only had a fixed amount to loan, we would choose the prospect with the lowest default rate, which would be prospect number 9 (Oener).
+
+##  Use the confidence interval in the linear probability model to calculate a negative case scenario: What is your expected profit if the default probabilities are at the upper value of the prediction interval.
+
+To do this we use the predict() function for a lm and access it's third element which is the upper-bound prediction.
+
+```{r}
+for (i in 1:10){
+  expected_profit = (1-predict(model_lm2, pros[[i]], level=0.95, interval="confidence")[3]) * 0.1 * as.numeric(prospect_data[i,][11])
+  cat("Prospect number", i, "(", as.character(prospect_data[i,][1]), ")", "expected profit (worst-case scenario): $", expected_profit, "\n")
+  
+  # print(predict(model_lm2, pros[[i]], level=0.95, interval="confidence"))
+  # print(predict(model_lm2, pros[[i]], level=0.95, interval="confidence")[3])
+  # predict(model_lm2, pros[[i]])
+}
+
+# linear_defaults <- predict(model_lm2, prospect_data, level=0.95, interval="confidence")
+# as.numeric(linear_defaults[1,][1])
+```
 

@@ -1,0 +1,133 @@
+---
+title: "Thore Sintram - Econometrics - Homework 2"
+output:
+  html_document: default
+  html_notebook: default
+---
+
+
+```{r}
+library(stargazer)
+library(dplyr)
+library(GGally)
+library(ggplot2)
+# rm(list =ls())
+#read the data into a dataframe
+credit <- read.csv(file='credit.csv', header=TRUE, sep=",")
+prospects <- read.csv(file='prospects.csv', header=TRUE, sep=",")
+
+```
+
+Here is a description of the variables in the data set: 
+
+- `default` 0 means they did not default, 1 means they defaulted
+- `seniority` job seniority (years)
+- `home` type of home ownership
+- `age` client's age
+- `marital` marital status
+- `job` type of job
+- `expenses` client's expenses
+- `income` client's income
+- `assets` client's assets
+- `debt` client's existing debts
+- `amount` loan amount (For prospects this is the personal loan amount they have applied for)
+- `savings` client's savings
+
+# Explore the data:
+```{r}
+View(credit)
+summary(credit)
+str(credit)
+
+View(prospects)
+summary(prospects)
+str(prospects)
+
+```
+
+# Discussing a possible, sensible model
+Y-variable: Default
+X-variable: 
+  -seniority: people with more work experience are usually more responsible
+  -home: house owners are usually more capable of paying their debts
+  -age: older people are usually more responsible
+  -income: the better the salary, the more likely they pay back their debt (Correlation with job)
+  -assets: if needed, they can pay back their debt by liquidating their assets
+  -savings: the more savings, the more likely they are capable of paying back the debt
+  -debt: the more debt, the less likely they pay back new debt
+  -amount: the higher the amount, the less likely they are capable of paying it all back
+  -expenses: the more expenses, the less likely they are gonna pay back the debt
+
+# Estimate the model using linear probability model
+```{r}
+lpm1 <- lm(default ~ seniority + home + age + income + assets + savings + debt + amount + expenses, data = credit)
+summary(lpm1)
+
+```
+
+# Estimate the model using probit
+```{r}
+prob1 <- glm(default ~ seniority + home + age + income + assets + savings + debt + amount + expenses, family = binomial(link="probit"), data = credit)
+summary(prob1)
+
+```
+
+# Estimate the model using logit
+```{r}
+log1 <- glm(default ~ seniority + home + age + income + assets + savings + debt + amount + expenses, family = binomial(link="logit"), data = credit)
+summary(log1)
+
+```
+
+# Do the models make sense?
+There does not seem anything to be odd, the only variable, which might cause problems later on, is the low adjusted R-square of the first model.
+
+# Predict each of of these applicants' probability of default (LPM)
+```{r}
+predict(lpm1, prospects, level=0.95, interval="confidence")
+```
+# Predict each of of these applicants' probability of default (Probit)
+```{r}
+predict(prob1, prospects, type = "response")
+```
+# Predict each of of these applicants' probability of default (Logit)
+```{r}
+predict(log1, prospects, type = "response")
+```
+
+# Who would you lend to given the predicted default probabilities and the given interest rate?
+The closer a prospect's default raiting to 0, the more likely they are to pay back their loan.
+Consequently, only prospects with a low default rating should receive a loan.
+
+```{r}
+
+defaulttable <- predict(lpm1, prospects, level=0.95, interval="confidence")
+averagerisk <- subset(defaulttable, select=-c(lwr,upr))
+profit <- select(prospects, amount) * ( 0.1 - averagerisk )
+show(profit)
+
+```
+If the calculated risk is taken into account, then only person number 9 and 10 should receive a loan.
+That being said, only Oener and Fassbender would receive their requested loan.
+
+# What is your expected profit if you follow this recommendation?
+```{r}
+offer <- c(28.21362,11.70244)
+total_profit <- sum(offer)
+show(total_profit)
+```
+
+Total Profit = 329.5
+
+# What is your expected profit if the default probabilities are at the upper value of the prediction interval?
+
+Generate a data frame with data for the worst case scenario
+
+```{r}
+worstcase <- subset(defaulttable, select=-c(lwr,fit))
+worstprofit <- select(prospects, amount) * ( 0.1 - worstcase )
+show(worstprofit)
+```
+
+In the worst case scenario, only person number 9 (Oener) would receive the requested loan.
+The expected total profit would therefore be ≈ 9.744
